@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Infinite Abyss - 安定版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-color: #00050a;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow-x: hidden;
+            /* スムーズスクロールがバグの原因になることがあるため無効化 */
+            scroll-behavior: auto; 
+        }
+
+        #abyss-container {
+            position: relative;
+            width: 100%;
+            /* 高さをJSで動的に更新し続ける */
+            min-height: 2000px; 
+        }
+
+        .layer {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 500px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            contain: layout paint; /* パフォーマンス最適化 */
+        }
+
+        .depth-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-family: monospace;
+            font-size: 1.5rem;
+            color: rgba(0, 255, 255, 0.8);
+            z-index: 100;
+            text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 15px;
+            border-radius: 4px;
+        }
+
+        .bubble {
+            position: fixed; /* absoluteからfixedに変更して計算負荷を軽減 */
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .message {
+            font-size: 1.1rem;
+            max-width: 80%;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 0.3em;
+            transition: opacity 0.5s;
+        }
+
+        .water-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+            z-index: 50;
+        }
+
+        #scroll-hint {
+            position: absolute;
+            top: 45vh;
+            width: 100%;
+            text-align: center;
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="water-overlay"></div>
+    <div class="depth-counter"><span id="meter">0</span>m</div>
+
+    <div id="abyss-container">
+        <div id="scroll-hint">
+            <h1 class="text-3xl mb-4 font-thin tracking-[0.5em]">ABYSS</h1>
+            <p class="text-cyan-800 animate-pulse">KEEP DESCENDING</p>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('abyss-container');
+        const meterDisplay = document.getElementById('meter');
+        const hint = document.getElementById('scroll-hint');
+        
+        const LAYER_HEIGHT = 500;
+        const BUFFER_SIZE = 15; // 画面内に保持するレイヤー数
+        let activeLayers = new Map(); // インデックス管理
+        
+        const messages = [
+            "まだ、光は届きますか？",
+            "水圧が強くなってきた気がする",
+            "何かが見えた気がした",
+            "戻る道は、もうありません",
+            "静寂だけが、あなたの味方です",
+            "ここは世界の底ではありません",
+            "1000m地点を通過",
+            "思考が溶けていく",
+            "呼吸を忘れないでください",
+            "暗闇に慣れてきましたか？",
+            "深淵もまた、あなたを見つめている"
+        ];
+
+        function getMessage(index) {
+            if (index === 2) return "潜り始めましたね。";
+            if (index === 20) return "1000m。まだ序の口です。";
+            if (index % 50 === 0) return `${index * 50}m地点。孤独は深まります。`;
+            return messages[Math.floor(Math.random() * messages.length)];
+        }
+
+        function createLayer(index) {
+            if (activeLayers.has(index)) return;
+
+            const layer = document.createElement('div');
+            layer.className = 'layer';
+            layer.style.top = (index * LAYER_HEIGHT) + 'px';
+            
+            // 深さに基づいた色計算（バグ回避のため単純化）
+            const darkness = Math.max(0, 5 - (index * 0.1));
+            layer.style.backgroundColor = `rgb(0, ${darkness}, ${darkness + 2})`;
+
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            msg.innerText = getMessage(index);
+            layer.appendChild(msg);
+
+            container.appendChild(layer);
+            activeLayers.set(index, layer);
+        }
+
+        function removeLayer(index) {
+            if (activeLayers.has(index)) {
+                const layer = activeLayers.get(index);
+                layer.remove();
+                activeLayers.delete(index);
+            }
+        }
+
+        function updateLayers() {
+            const scrollY = window.scrollY;
+            const currentIndex = Math.floor(scrollY / LAYER_HEIGHT);
+            
+            // メーター更新（1000m付近での計算バグを防ぐため単純化）
+            const depth = Math.floor(scrollY / 10);
+            meterDisplay.innerText = depth.toLocaleString();
+
+            // ヒントの消去
+            if (scrollY > 200) hint.style.opacity = '0';
+
+            // レイヤーの動的生成と削除（これが無限スクロールの肝）
+            const start = Math.max(0, currentIndex - 2);
+            const end = start + BUFFER_SIZE;
+
+            for (let i = start; i < end; i++) {
+                createLayer(i);
+            }
+
+            // 範囲外のレイヤーを削除してメモリを解放
+            for (let [idx, el] of activeLayers) {
+                if (idx < start || idx >= end) {
+                    removeLayer(idx);
+                }
+            }
+
+            // コンテナの高さを常にスクロール位置より先に伸ばしておく
+            if (scrollY + window.innerHeight * 2 > container.offsetHeight) {
+                container.style.height = (scrollY + window.innerHeight * 5) + 'px';
+            }
+        }
+
+        // 泡の演出（軽量化版）
+        function spawnBubble() {
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            const size = Math.random() * 6 + 2 + 'px';
+            bubble.style.width = size;
+            bubble.style.height = size;
+            bubble.style.left = Math.random() * 100 + 'vw';
+            bubble.style.bottom = '-20px';
+            
+            const duration = Math.random() * 5 + 5;
+            bubble.animate([
+                { transform: 'translateY(0)', opacity: 0 },
+                { opacity: 0.5, offset: 0.2 },
+                { transform: 'translateY(-110vh)', opacity: 0 }
+            ], {
+                duration: duration * 1000,
+                easing: 'linear'
+            }).onfinish = () => bubble.remove();
+
+            document.body.appendChild(bubble);
+        }
+
+        // 初回実行
+        window.addEventListener('scroll', updateLayers, { passive: true });
+        updateLayers();
+        
+        // 泡の生成間隔
+        setInterval(spawnBubble, 1500);
+
+        // 稀にノイズを走らせる
+        setInterval(() => {
+            if (window.scrollY > 50000) { // 極限まで深い場合
+                document.body.style.opacity = 0.9 + Math.random() * 0.1;
+            }
+        }, 50);
+
+    </script>
+</body>
+</html>
