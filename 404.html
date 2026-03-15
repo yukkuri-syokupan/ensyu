@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - LOST IN THE ABYSS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --error-color: #ff3e3e;
+            --bg-color: #000205;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .glitch-wrapper {
+            text-align: center;
+            z-index: 10;
+        }
+
+        .glitch {
+            font-size: 8rem;
+            font-weight: bold;
+            position: relative;
+            text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75),
+                         -0.025em -0.05em 0 rgba(0, 255, 0, 0.75),
+                         0.025em 0.05em 0 rgba(0, 0, 255, 0.75);
+            animation: glitch 500ms infinite;
+        }
+
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75), -0.05em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em 0.05em 0 rgba(0, 0, 255, 0.75); }
+            14% { text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75), -0.05em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em 0.05em 0 rgba(0, 0, 255, 0.75); }
+            15% { text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75), 0.025em 0.025em 0 rgba(0, 255, 0, 0.75), -0.05em -0.05em 0 rgba(0, 0, 255, 0.75); }
+            49% { text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75), 0.025em 0.025em 0 rgba(0, 255, 0, 0.75), -0.05em -0.05em 0 rgba(0, 0, 255, 0.75); }
+            50% { text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75), 0.05em 0 0 rgba(0, 255, 0, 0.75), 0 -0.05em 0 rgba(0, 0, 255, 0.75); }
+            99% { text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75), 0.05em 0 0 rgba(0, 255, 0, 0.75), 0 -0.05em 0 rgba(0, 0, 255, 0.75); }
+            100% { text-shadow: -0.025em 0 0 rgba(255, 0, 0, 0.75), -0.025em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em -0.05em 0 rgba(0, 0, 255, 0.75); }
+        }
+
+        .broken-meter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            color: var(--error-color);
+            opacity: 0.8;
+        }
+
+        .message {
+            margin-top: 20px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .back-btn {
+            margin-top: 40px;
+            display: inline-block;
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: #fff;
+        }
+
+        .noise-particle {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.05);
+            font-size: 0.8rem;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.06),
+                rgba(0, 255, 0, 0.02),
+                rgba(0, 0, 255, 0.06)
+            );
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanline"></div>
+    <div class="broken-meter">DEPTH: <span id="err-val">NaN</span>m</div>
+
+    <div class="glitch-wrapper">
+        <div class="glitch" data-text="404">404</div>
+        <div class="message">存在しない深度です</div>
+        <a href="#" class="back-btn" onclick="window.history.back(); return false;">浮上する</a>
+    </div>
+
+    <script>
+        const errVal = document.getElementById('err-val');
+        
+        // 壊れた計器の演出
+        setInterval(() => {
+            const random = Math.random();
+            if (random > 0.8) {
+                errVal.innerText = "ERR";
+            } else if (random > 0.6) {
+                errVal.innerText = "---";
+            } else {
+                errVal.innerText = Math.floor(Math.random() * 99999);
+            }
+        }, 150);
+
+        // 浮遊するノイズ（エラーログの断片）の生成
+        function spawnNoise() {
+            const noise = document.createElement('div');
+            noise.className = 'noise-particle';
+            const logs = ["0x000404", "NULL_POINTER", "VOID", "NO_PATH_FOUND", "UNDEFINED", "LOST", "DEAD_END"];
+            noise.innerText = logs[Math.floor(Math.random() * logs.length)];
+            
+            noise.style.left = Math.random() * 100 + 'vw';
+            noise.style.top = '110vh';
+            
+            const duration = Math.random() * 10 + 5;
+            noise.animate([
+                { transform: `translateY(0) rotate(${Math.random() * 360}deg)`, opacity: 0 },
+                { opacity: 0.2, offset: 0.5 },
+                { transform: `translateY(-120vh) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+            ], {
+                duration: duration * 1000,
+                easing: 'linear'
+            }).onfinish = () => noise.remove();
+
+            document.body.appendChild(noise);
+        }
+
+        setInterval(spawnNoise, 800);
+
+        // たまに画面をフラッシュさせる
+        setInterval(() => {
+            if (Math.random() > 0.98) {
+                document.body.style.backgroundColor = 'rgba(50, 0, 0, 0.2)';
+                setTimeout(() => {
+                    document.body.style.backgroundColor = '';
+                }, 50);
+            }
+        }, 100);
+    </script>
+</body>
+</html>
