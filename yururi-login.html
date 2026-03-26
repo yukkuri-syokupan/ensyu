@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; padding: 20px; background-color: transparent; }
+        .btn { 
+            padding: 12px 24px; font-size: 16px; cursor: pointer; border-radius: 25px; 
+            border: none; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .btn:active { transform: translateY(2px); }
+        #loginBtn { background-color: #4285F4; color: white; display: none; }
+        #logoutBtn { background-color: #f1f1f1; color: #555; margin-top: 15px; font-size: 13px; }
+        #userInfo { margin-top: 10px; display: none; animation: fadeIn 0.5s; }
+        #userPic { border-radius: 50%; width: 60px; height: 60px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        #userName { font-weight: bold; margin: 8px 0 2px 0; }
+        #userEmail { font-size: 12px; color: #888; margin-bottom: 10px; }
+        .loading { color: #aaa; font-size: 14px; font-style: italic; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="auth-container">
+        <div id="loadingMsg" class="loading">認証状態を確認中...</div>
+        
+        <button id="loginBtn" class="btn">G Googleでログイン</button>
+        
+        <div id="userInfo">
+            <img id="userPic" src="">
+            <div id="userName"></div>
+            <div id="userEmail"></div>
+            <button id="logoutBtn" class="btn">ログアウト</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithRedirect, 
+            getRedirectResult, 
+            GoogleAuthProvider, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // Firebase設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKpxEO_m-4vhN8mVJVD3bgbHUb8k4yE-Q",
+            authDomain: "yururi-login.firebaseapp.com",
+            projectId: "yururi-login",
+            storageBucket: "yururi-login.firebasestorage.app",
+            messagingSenderId: "247070527499",
+            appId: "1:247070527499:web:93c28dadfb3ef8b56f370e",
+            measurementId: "G-0NVT72CZSL"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userInfo = document.getElementById('userInfo');
+        const loadingMsg = document.getElementById('loadingMsg');
+
+        // 1. ログイン実行
+        loginBtn.onclick = () => {
+            loginBtn.innerText = "転送中...";
+            signInWithRedirect(auth, provider);
+        };
+
+        // 2. ログアウト実行
+        logoutBtn.onclick = () => {
+            signOut(auth).then(() => location.reload());
+        };
+
+        // 3. リダイレクト後の結果取得
+        getRedirectResult(auth).catch((error) => {
+            console.error("Auth Error:", error.code, error.message);
+            if (error.code === 'auth/web-storage-unsupported') {
+                alert("ブラウザの「サードパーティCookie」を許可してください。");
+            }
+        });
+
+        // 4. 認証状態の監視
+        onAuthStateChanged(auth, (user) => {
+            loadingMsg.style.display = 'none';
+            if (user) {
+                // ログイン済み
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'block';
+                document.getElementById('userName').innerText = user.displayName;
+                document.getElementById('userEmail').innerText = user.email;
+                document.getElementById('userPic').src = user.photoURL;
+            } else {
+                // 未ログイン
+                loginBtn.style.display = 'inline-block';
+                userInfo.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
